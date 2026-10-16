@@ -57,6 +57,14 @@ native_handle_t* native_handle_clone(const native_handle_t* handle) {
     if (clone == NULL) return NULL;
 
     for (int i = 0; i < handle->numFds; i++) {
+        if (handle->data[i] == -1) {
+            // Legacy gralloc handles (e.g. TI OMAP4 IMG handles) carry -1
+            // placeholder entries for unused sub-allocations. dup(-1) would
+            // otherwise abort the whole clone, so preserve the sentinel.
+            clone->data[i] = -1;
+            continue;
+        }
+
         clone->data[i] = dup(handle->data[i]);
         if (clone->data[i] == -1) {
             clone->numFds = i;
