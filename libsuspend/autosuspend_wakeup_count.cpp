@@ -198,6 +198,16 @@ static int autosuspend_wakeup_count_disable(void) {
 
     if (ret < 0) {
         PLOG(ERROR) << "error changing semaphore";
+        return ret;
+    }
+
+    /* On kernels with earlysuspend (e.g. omap4 3.4), the late_resume
+     * handlers (including dsscomp_late_resume which unblanks the display)
+     * are only triggered by writing "on" to /sys/power/state. Without
+     * this the display stays blanked after the first screen off. */
+    static constexpr char on_state[] = "on";
+    if (!WriteStringToFd(on_state, state_fd)) {
+        PLOG(ERROR) << "error writing " << on_state << " to " << sys_power_state;
     }
 
     LOG(VERBOSE) << "autosuspend_wakeup_count_disable done";
